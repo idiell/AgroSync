@@ -1,4 +1,3 @@
-<?php /* dashboard.php */ ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,70 +5,106 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Dashboard | AgroSync</title>
 
-  <!-- Your Tailwind build -->
+  <!-- Tailwind build -->
   <link href="../../public/app.css" rel="stylesheet" />
 
   <!-- Bootstrap Icons -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
 
   <style>
-    /* Sidebar transitions */
-    .sidebar {
-      width: 16rem;
-      transition: width 0.25s ease-in-out;
-    }
-    .sidebar.collapsed { width: 5rem; }
+  /* Sidebar transitions */
+  .sidebar {
+    width: 13rem; /* smaller than before */
+    transition: width 0.25s ease-in-out;
+  }
+  .sidebar.collapsed {
+    width: 5rem;
+  }
 
-    /* Hide labels when collapsed */
-    .menu-label { transition: opacity 0.15s ease-in-out; }
-    .sidebar.collapsed .menu-label { opacity: 0; width: 0; overflow: hidden; }
-    .sidebar.collapsed .logo-text { display: none; }
+  /* Hide text when collapsed */
+  .menu-label {
+    transition: opacity 0.15s ease-in-out;
+    font-size: 0.9rem;
+  }
+  .sidebar.collapsed .menu-label {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+  }
+  .sidebar.collapsed .logo-text {
+    display: none;
+  }
 
-    .chevron-icon { transition: transform 0.25s ease-in-out; }
-    .rotate-180 { transform: rotate(180deg); }
+  /* Icon centering when collapsed */
+  .sidebar.collapsed .menu-item {
+    justify-content: center;
+  }
 
-    /* Keep button behavior sane; let utilities control visuals */
-    .menu-item {
-      background-color: transparent;
-      border: none;
-      width: 100%;
-      text-align: left;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 0.75rem; /* equals Tailwind gap-3 */
-      padding: 0.75rem 1rem; /* equals Tailwind px-4 py-3 */
-      border-radius: 0.5rem; /* equals Tailwind rounded */
-      color: rgb(55 65 81); /* equals text-gray-700 */
-    }
-    /* Safety net in case Tailwind isn’t applied for some reason */
-    .menu-item:hover { background-color: rgb(243 244 246); } /* gray-100 */
-    a{
-       background-color: transparent;
-      border: none;
-      width: 100%;
-      text-align: left;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 0.75rem; /* equals Tailwind gap-3 */
-      padding: 0.75rem 1rem; /* equals Tailwind px-4 py-3 */
-      border-radius: 0.5rem; /* equals Tailwind rounded */
-      color: rgb(55 65 81); /* equals text-gray-700 */
-      margin-top: 135px;
-    }
-    a.active{
-      background-color: rgb(243 244 246);
-      
-    }
+  /* Button look */
+  .menu-item {
+    background-color: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.65rem 0.9rem;
+    border-radius: 0.5rem;
+    color: rgb(55 65 81); /* gray-700 */
+    transition: background-color 0.2s ease, color 0.2s ease;
+    font-size: 0.9rem;
+  }
 
-    /* Active state (Dashboard gray when on dashboard page) */
-    .menu-item.active {
-      background-color: rgb(107 114 128); /* gray-500 */
-      color: white;
-    }
-    .menu-item.active i { color: inherit; }
-  </style>
+  .menu-item i {
+    font-size: 1.1rem; /* slightly smaller icons */
+  }
+
+  .menu-item:hover {
+    background-color: rgb(243 244 246); /* gray-100 */
+  }
+
+  /* Active item: blue background & white icon/text */
+  .menu-item.active {
+    background-color: #3b82f6; /* Tailwind blue-500 */
+    color: white;
+  }
+
+  .menu-item.active i {
+    color: white;
+  }
+
+  /* Footer link (Sign Out) */
+  .footer-link {
+    background-color: transparent;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    padding: 0.45rem 0.75rem;
+    border-radius: 0.5rem;
+    color: rgb(220 38 38); /* red-600 */
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+    font-size: 0.9rem;
+  }
+
+  .footer-link i {
+    font-size: 1.1rem;
+  }
+
+  .footer-link:hover {
+    background-color: rgb(254 226 226); /* red-100 */
+  }
+
+  /* When expanded, align label and icon */
+  .sidebar:not(.collapsed) .footer-link {
+    justify-content: flex-start;
+  }
+</style>
+
 </head>
 
 <body class="min-h-screen bg-gray-50 text-gray-800">
@@ -79,14 +114,14 @@
       <!-- Header -->
       <div class="p-4 flex items-center justify-between border-b border-gray-200">
         <div class="flex items-center overflow-hidden">
-          <span class="logo-text font-bold text-xl text-gray-800 whitespace-nowrap">AgroSync</span>
+          <span class="logo-text font-bold text-lg text-gray-800 whitespace-nowrap">AgroSync</span>
         </div>
         <button id="toggleBtn"
                 class="flex-shrink-0 p-2 hover:bg-gray-100 rounded"
                 aria-label="Toggle sidebar"
                 aria-expanded="true"
                 aria-controls="sidebar">
-          <i class="bi bi-list text-2xl text-gray-700"></i>
+          <i class="bi bi-list text-xl text-gray-700"></i>
         </button>
       </div>
 
@@ -95,97 +130,87 @@
         <button class="menu-item hover:bg-gray-100"
                 data-page="dashboard"
                 onclick="navigateTo(this, '../dashboard/index.php')">
-          <i class="bi bi-house text-lg"></i>
+          <i class="bi bi-house"></i>
           <span class="menu-label">Dashboard</span>
         </button>
 
         <button class="menu-item hover:bg-gray-100"
                 data-page="calendar"
                 onclick="navigateTo(this, '../calendar/index.php')">
-          <i class="bi bi-calendar text-lg"></i>
+          <i class="bi bi-calendar"></i>
           <span class="menu-label">Calendar</span>
         </button>
 
         <button class="menu-item hover:bg-gray-100"
                 data-page="aira"
                 onclick="navigateTo(this, '../aira/index.php')">
-          <i class="bi bi-chat-left-text text-lg"></i>
+          <i class="bi bi-chat-left-text"></i>
           <span class="menu-label">Aira.ai</span>
         </button>
 
         <button class="menu-item hover:bg-gray-100"
                 data-page="farm"
                 onclick="navigateTo(this, '../farm/index.php')">
-          <i class="bi bi-grid-3x3-gap text-lg"></i>
+          <i class="bi bi-grid-3x3-gap"></i>
           <span class="menu-label">Farm</span>
         </button>
 
         <button class="menu-item hover:bg-gray-100"
                 data-page="sell"
                 onclick="navigateTo(this, '../sells/index.php')">
-          <i class="bi bi-bag text-lg"></i>
+          <i class="bi bi-bag"></i>
           <span class="menu-label">Sell</span>
         </button>
 
         <button class="menu-item hover:bg-gray-100"
                 data-page="stock"
                 onclick="navigateTo(this, '../stock/index.php')">
-          <i class="bi bi-box-seam text-lg"></i>
+          <i class="bi bi-box-seam"></i>
           <span class="menu-label">Stock</span>
         </button>
-
-        <a class=" hover:bg-red-100"
-                onclick="navigateTo(this, '/index.php')">
-          <i class="bi bi-box-arrow-right text-lg text-red-600" ></i>
-          <span class="menu-label text-red-600">Sign Out</span>
-        </a>
       </nav>
 
       <!-- Footer -->
       <div class="border-t border-gray-200 p-3">
-        <button class="w-full flex items-center gap-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded"
-                id="collapseBtnAlt" aria-label="Collapse sidebar">
-          <i class="bi bi-chevron-left text-base chevron-icon"></i>
-        </button>
+        <a class="footer-link" href="../../auth/logout.php" rel="nofollow">
+          <i class="bi bi-box-arrow-right" style="color:#dc2626"></i>
+          <span class="menu-label" style="color:#dc2626">Sign Out</span>
+        </a>
       </div>
     </aside>
-   
   </div>
 
-  <!-- Working JS (NOT commented out) -->
+  <!-- JS -->
   <script>
-    const sidebar = document.getElementById('sidebar');
+    const sidebar   = document.getElementById('sidebar');
     const toggleBtn = document.getElementById('toggleBtn');
-    const collapseAlt = document.getElementById('collapseBtnAlt');
     const menuItems = Array.from(document.querySelectorAll('.menu-item'));
 
-    // Sidebar collapse/expand
     function toggleSidebar() {
+      if (!sidebar) return;
       sidebar.classList.toggle('collapsed');
-      document.querySelectorAll('.chevron-icon').forEach(i => i.classList.toggle('rotate-180'));
-      toggleBtn.setAttribute('aria-expanded', !sidebar.classList.contains('collapsed'));
+      if (toggleBtn) {
+        toggleBtn.setAttribute('aria-expanded', String(!sidebar.classList.contains('collapsed')));
+      }
     }
-    toggleBtn.addEventListener('click', toggleSidebar);
-    collapseAlt.addEventListener('click', toggleSidebar);
+    if (toggleBtn) toggleBtn.addEventListener('click', toggleSidebar);
 
-    // Navigate + mark active
     function navigateTo(button, link) {
-      const page = button.getAttribute('data-page');
-      try { localStorage.setItem('agrosync_active_page', page); } catch (e) {}
-      setActive(page);
+      const page = button?.getAttribute('data-page');
+      try { if (page) localStorage.setItem('agrosync_active_page', page); } catch (e) {}
+      if (page) setActive(page);
       window.location.href = link;
     }
-    window.navigateTo = navigateTo; // expose for inline onclick
+    window.navigateTo = navigateTo;
 
-    // Infer active page from URL if storage missing
     function inferPageFromPath() {
       const path = window.location.pathname.toLowerCase();
       if (path.includes('/dashboard/')) return 'dashboard';
-      if (path.includes('/calendar/')) return 'calendar';
-      if (path.includes('/aira/'))     return 'aira';
-      if (path.includes('/farm/'))     return 'farm';
-      if (path.includes('/sells/'))    return 'sell';
-      if (path.includes('/stock/'))    return 'stock';
+      if (path.includes('/calendar/'))  return 'calendar';
+      if (path.includes('/aira/'))      return 'aira';
+      if (path.includes('/farm/'))      return 'farm';
+      if (path.includes('/sells/'))     return 'sell';
+      if (path.includes('/stock/'))     return 'stock';
       return null;
     }
 
@@ -193,15 +218,11 @@
       menuItems.forEach(btn => {
         const isActive = btn.getAttribute('data-page') === page;
         btn.classList.toggle('active', isActive);
-        if (isActive) {
-          btn.setAttribute('aria-current', 'page');
-        } else {
-          btn.removeAttribute('aria-current');
-        }
+        if (isActive) btn.setAttribute('aria-current', 'page');
+        else btn.removeAttribute('aria-current');
       });
     }
 
-    // Initialize active state on load
     (function initActive() {
       let page = null;
       try { page = localStorage.getItem('agrosync_active_page'); } catch (e) {}

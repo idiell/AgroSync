@@ -46,7 +46,7 @@
     <div class="relative z-[2] max-w-[1200px] w-[92vw] mx-auto grid gap-6 md:grid-cols-[1.05fr_.95fr] items-center">
       <!-- Left copy -->
       <div class="text-white">
-        <h1 class="font-playfair text-[clamp(36px,5.5vw,68px)] leading-tight font-light drop-shadow-lg">
+      <h1 class="font-playfair text-[clamp(36px,5.5vw,68px)] leading-tight font-light drop-shadow-lg">
           Effortless farm<br/>data, from field<br/>to report
         </h1>
         <p class="mt-3 text-[18px] leading-7/relaxed opacity-95 max-w-[48ch]">
@@ -59,14 +59,7 @@
             Get Started
           </a>
         </div>
-      </div>
-
-      <!-- Right mock (optional) -->
-      <div class="flex justify-center items-center gap-4">
-        <div class="rounded-2xl overflow-hidden bg-black shadow-2xl border border-white/10 w-[540px] aspect-[16/10] max-w-full">
-          <img src="https://images.unsplash.com/photo-1559163179-4b48b0b72f9b?q=80&w=1200&auto=format&fit=crop" alt="Tablet UI" class="w-full h-full object-cover" />
-        </div>
-      </div>
+      </div>      
     </div>
   </section>
 
