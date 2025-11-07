@@ -1,12 +1,22 @@
+<?php
+// modules/ai/ai-assistant.php
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>AI Assistant | AgroSync</title>
+
+  <!-- Tailwind build output from your CLI -->
   <link href="../../public/app.css" rel="stylesheet" />
+
+  <!-- Icons -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+
+  <!-- Optional: Tailwind CDN (you may remove if using only compiled CSS) -->
   <script src="https://cdn.tailwindcss.com"></script>
+
   <style>
     @keyframes gradient {
       0% { background-position: 0% 50%; }
@@ -34,9 +44,9 @@
 </head>
 <body class="flex h-screen bg-gray-50">
   <?php include '../../components/sidebar.php'; ?> 
-  
-  <main class="flex-1 min-w-0 overflow-hidden flex flex-col"> <!-- min-h-0 + flex column root -->
-    <div class="h-full flex flex-col min-h-0"> <!-- min-h-0 ensures children can overflow -->
+
+  <main class="flex-1 min-w-0 overflow-hidden flex flex-col">
+    <div class="h-full flex flex-col min-h-0">
       <!-- Header -->
       <header class="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between flex-shrink-0">
         <div class="flex items-center space-x-3">
@@ -53,16 +63,16 @@
         </button>
       </header>
 
-      <!-- Chat Container (is the ONLY scrollable area) -->
+      <!-- Chat Container -->
       <div id="chatContainer" class="flex-1 min-h-0 overflow-y-auto px-4 py-8">
-        <!-- Welcome Screen (centered within the scroll area) -->
+        <!-- Welcome Screen -->
         <div id="welcomeScreen" class="max-w-2xl mx-auto flex flex-col items-center justify-center min-h-full text-center">
           <div class="w-32 h-32 mx-auto mb-8 rounded-full gradient-blob opacity-80"></div>
           <h2 class="text-4xl font-bold text-gray-800 mb-4">Good Day, Farmer</h2>
           <p class="text-2xl text-gray-600 mb-8">
             How Can I <span class="text-indigo-600 font-semibold">Assist You Today?</span>
           </p>
-          
+
           <!-- Suggestion Chips -->
           <div class="flex flex-wrap gap-3 justify-center mt-8">
             <button onclick="sendSuggestion('What crops should I plant this season?')" class="bg-white border border-gray-200 px-4 py-2 rounded-full text-sm text-gray-700 hover:border-indigo-500 hover:text-indigo-600 transition">
@@ -88,7 +98,7 @@
       <div class="bg-white border-t border-gray-200 px-4 py-4 flex-shrink-0">
         <div class="max-w-4xl mx-auto">
           <div class="flex items-center space-x-3 bg-gray-50 rounded-2xl border border-gray-200 p-2">
-            <button class="p-2 text-gray-400 hover:text-gray-600 transition">
+            <button class="p-2 text-gray-400 hover:text-gray-600 transition" type="button">
               <i class="bi bi-paperclip text-lg"></i>
             </button>
             <input 
@@ -96,22 +106,21 @@
               id="messageInput" 
               placeholder="Ask about crops, weather, soil, irrigation, or farm management..."
               class="flex-1 bg-transparent border-none outline-none text-gray-700 placeholder-gray-400"
-              onkeypress="if(event.key==='Enter') sendMessage()"
             >
-            <button onclick="sendMessage()" class="bg-indigo-600 text-white p-2 rounded-xl hover:bg-indigo-700 transition">
+            <button id="sendButton" type="button" onclick="sendMessage()" class="bg-indigo-600 text-white p-2 rounded-xl hover:bg-indigo-700 transition">
               <i class="bi bi-send-fill"></i>
             </button>
           </div>
           <div class="flex items-center justify-center space-x-4 mt-3 text-xs text-gray-500">
-            <button class="flex items-center space-x-1 hover:text-indigo-600 transition">
+            <button class="flex items-center space-x-1 hover:text-indigo-600 transition" type="button">
               <i class="bi bi-lightbulb"></i>
               <span>Smart Analysis</span>
             </button>
-            <button class="flex items-center space-x-1 hover:text-indigo-600 transition">
+            <button class="flex items-center space-x-1 hover:text-indigo-600 transition" type="button">
               <i class="bi bi-image"></i>
               <span>Upload Image</span>
             </button>
-            <button class="flex items-center space-x-1 hover:text-indigo-600 transition">
+            <button class="flex items-center space-x-1 hover:text-indigo-600 transition" type="button">
               <i class="bi bi-bar-chart"></i>
               <span>Farm Data</span>
             </button>
@@ -122,11 +131,14 @@
   </main>
 
   <script>
-const API_URL = 'http://localhost:3000/api/chat'; // Node proxy
+    // ===== CONFIG =====
+    // PHP endpoint in same folder as this file:
+    const API_URL = 'chat.php';
 
-let conversationHistory = [];
+    const PRIMARY_MODEL = 'amazon/nova-premier-v1';
+    const FALLBACK_MODEL = 'openai/gpt-4o-mini';
 
-const SYSTEM_PROMPT = `You are FarmBot AI, an expert agricultural assistant specialized in smart farming, precision agriculture, and sustainable farm management. Your knowledge covers:
+    const SYSTEM_PROMPT = `You are FarmBot AI, an expert agricultural assistant specialized in smart farming, precision agriculture, and sustainable farm management. Your knowledge covers:
 
 - Crop selection, rotation, and optimization based on climate, soil, and market conditions
 - Soil health analysis, testing interpretation, and amendment recommendations
@@ -151,204 +163,208 @@ Always provide:
 
 Be conversational, supportive, and encouraging while maintaining expertise. Use emojis sparingly for clarity (🌱💧🌾☀️🌧️).`;
 
-// ---------- UI helpers ----------
-function scrollToBottom() {
-  const container = document.getElementById('chatContainer');
-  container.scrollTop = container.scrollHeight;
-}
+    // ===== STATE =====
+    let conversationHistory = [];
+    let isSending = false;
 
-function newChat() {
-  conversationHistory = [];
-  document.getElementById('welcomeScreen').classList.remove('hidden');
-  document.getElementById('chatMessages').classList.add('hidden');
-  document.getElementById('chatMessages').innerHTML = '';
-  document.getElementById('messageInput').value = '';
-  scrollToBottom();
-}
+    // ===== HELPERS =====
+    function scrollToBottom() {
+      const container = document.getElementById('chatContainer');
+      container.scrollTop = container.scrollHeight;
+    }
 
-function sendSuggestion(text) {
-  document.getElementById('messageInput').value = text;
-  sendMessage();
-}
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
 
-function sendMessage() {
-  const input = document.getElementById('messageInput');
-  const message = input.value.trim();
-  if (!message) return;
+    function showWelcome() {
+      document.getElementById('welcomeScreen').classList.remove('hidden');
+      document.getElementById('chatMessages').classList.add('hidden');
+    }
 
-  document.getElementById('welcomeScreen').classList.add('hidden');
-  document.getElementById('chatMessages').classList.remove('hidden');
+    function showChat() {
+      document.getElementById('welcomeScreen').classList.add('hidden');
+      document.getElementById('chatMessages').classList.remove('hidden');
+    }
 
-  addMessage(message, 'user');
-  input.value = '';
-
-  conversationHistory.push({ role: 'user', content: message });
-
-  showTypingIndicator();
-  scrollToBottom();
-
-  callAPI();
-}
-
-function addMessage(text, sender) {
-  const messagesDiv = document.getElementById('chatMessages');
-  const wrapper = document.createElement('div');
-  wrapper.className = `chat-message flex ${sender === 'user' ? 'justify-end' : 'justify-start'}`;
-
-  if (sender === 'user') {
-    wrapper.innerHTML = `
-      <div class="bg-indigo-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 max-w-2xl">
-        <p class="text-sm">${escapeHtml(text)}</p>
-      </div>
-    `;
-  } else {
-    wrapper.innerHTML = `
-      <div class="flex space-x-3 max-w-3xl">
-        <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
-          <i class="bi bi-robot text-white"></i>
-        </div>
-        <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-4 py-3">
-          <p class="text-sm text-gray-800 whitespace-pre-wrap">${escapeHtml(text)}</p>
-        </div>
-      </div>
-    `;
-  }
-
-  messagesDiv.appendChild(wrapper);
-  scrollToBottom();
-}
-
-function showTypingIndicator() {
-  const messagesDiv = document.getElementById('chatMessages');
-  const typingDiv = document.createElement('div');
-  typingDiv.id = 'typingIndicator';
-  typingDiv.className = 'chat-message flex justify-start';
-  typingDiv.innerHTML = `
-    <div class="flex space-x-3">
-      <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center">
-        <i class="bi bi-robot text-white"></i>
-      </div>
-      <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-4 py-3">
-        <div class="typing-indicator flex space-x-1">
-          <span class="w-2 h-2 bg-gray-400 rounded-full"></span>
-          <span class="w-2 h-2 bg-gray-400 rounded-full"></span>
-          <span class="w-2 h-2 bg-gray-400 rounded-full"></span>
-        </div>
-      </div>
-    </div>
-  `;
-  messagesDiv.appendChild(typingDiv);
-  scrollToBottom();
-}
-
-function removeTypingIndicator() {
-  const indicator = document.getElementById('typingIndicator');
-  if (indicator) indicator.remove();
-}
-
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-// ---------- API caller with robust handling + model fallback ----------
-const PRIMARY_MODEL = 'amazon/nova-premier-v1';
-const FALLBACK_MODEL = 'openai/gpt-4o-mini';
-
-async function callAPI() {
-  // Try primary; on model-specific failures, auto-fallback to secondary
-  const tryModels = [PRIMARY_MODEL, FALLBACK_MODEL];
-  let lastErr = null;
-
-  for (const model of tryModels) {
-    try {
-      const msg = await fetchAndParse(model);
-      conversationHistory.push({ role: 'assistant', content: msg });
+    // ===== UI ACTIONS =====
+    function newChat() {
+      conversationHistory = [];
+      const messagesDiv = document.getElementById('chatMessages');
+      messagesDiv.innerHTML = '';
       removeTypingIndicator();
-      addMessage(msg, 'assistant');
+      showWelcome();
+      const input = document.getElementById('messageInput');
+      input.value = '';
+      input.focus();
+      isSending = false;
       scrollToBottom();
-      return; // success; stop trying others
-    } catch (err) {
-      lastErr = err;
-      // If it was primary model and error looks model-specific, try fallback automatically
-      if (model === PRIMARY_MODEL) {
-        // Continue loop to fallback
-        continue;
-      } else {
-        // Fallback also failed → show error
-        break;
-      }
     }
-  }
 
-  removeTypingIndicator();
-  const errMsg = lastErr?.message || 'Unknown error';
-  addMessage('⚠️ ' + errMsg, 'assistant');
-}
+    function sendSuggestion(text) {
+      const input = document.getElementById('messageInput');
+      input.value = text;
+      sendMessage();
+    }
 
-async function fetchAndParse(model) {
-  // Abort after 45s to avoid hanging
-  const controller = new AbortController();
-  const t = setTimeout(() => controller.abort(), 45000);
+    async function sendMessage() {
+      if (isSending) return;
 
-  try {
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      signal: controller.signal,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          ...conversationHistory
-        ],
-        temperature: 0.7,
-        max_tokens: 2000
-      })
-    });
+      const input = document.getElementById('messageInput');
+      const raw = input.value;
+      const message = raw.trim();
+      if (!message) return;
 
-    // Read as text first to catch HTML/non-JSON cases
-    const raw = await response.text();
+      showChat();
+      addMessage(message, 'user');
+      conversationHistory.push({ role: 'user', content: message });
 
-    if (!response.ok) {
-      // Try to parse upstream JSON error; else show HTML snippet
-      let errMsg = `API Error ${response.status}`;
+      input.value = '';
+      input.focus();
+
+      showTypingIndicator();
+      scrollToBottom();
+
+      isSending = true;
       try {
-        const j = JSON.parse(raw);
-        errMsg = j.error || j.message || errMsg;
-      } catch {
-        const snippet = raw.replace(/\s+/g, ' ').slice(0, 200);
-        errMsg = `${errMsg}: ${snippet}`;
+        await callAPI();
+      } finally {
+        isSending = false;
       }
-      throw new Error(errMsg);
     }
 
-    // Expect JSON body on success
-    let data;
-    try {
-      data = JSON.parse(raw);
-    } catch {
-      const snippet = raw.replace(/\s+/g, ' ').slice(0, 200);
-      throw new Error(`Unexpected non-JSON response: ${snippet}`);
+    function addMessage(text, sender) {
+      const messagesDiv = document.getElementById('chatMessages');
+      const wrapper = document.createElement('div');
+      wrapper.className = `chat-message flex ${sender === 'user' ? 'justify-end' : 'justify-start'}`;
+
+      if (sender === 'user') {
+        wrapper.innerHTML = `
+          <div class="bg-indigo-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 max-w-2xl">
+            <p class="text-sm break-words">${escapeHtml(text)}</p>
+          </div>
+        `;
+      } else {
+        wrapper.innerHTML = `
+          <div class="flex space-x-3 max-w-3xl">
+            <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+              <i class="bi bi-robot text-white"></i>
+            </div>
+            <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-4 py-3">
+              <p class="text-sm text-gray-800 whitespace-pre-wrap break-words">${escapeHtml(text)}</p>
+            </div>
+          </div>
+        `;
+      }
+
+      messagesDiv.appendChild(wrapper);
+      scrollToBottom();
     }
 
-    const assistantMessage =
-      data?.choices?.[0]?.message?.content ??
-      data?.choices?.[0]?.text ?? // some providers return "text"
-      '(no content)';
+    function showTypingIndicator() {
+      removeTypingIndicator();
+      const messagesDiv = document.getElementById('chatMessages');
+      const typingDiv = document.createElement('div');
+      typingDiv.id = 'typingIndicator';
+      typingDiv.className = 'chat-message flex justify-start';
+      typingDiv.innerHTML = `
+        <div class="flex space-x-3">
+          <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center">
+            <i class="bi bi-robot text-white"></i>
+          </div>
+          <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-4 py-3">
+            <div class="typing-indicator flex space-x-1 items-center">
+              <span class="w-2 h-2 bg-gray-400 rounded-full"></span>
+              <span class="w-2 h-2 bg-gray-400 rounded-full"></span>
+              <span class="w-2 h-2 bg-gray-400 rounded-full"></span>
+            </div>
+          </div>
+        </div>
+      `;
+      messagesDiv.appendChild(typingDiv);
+      scrollToBottom();
+    }
 
-    return assistantMessage;
-  } finally {
-    clearTimeout(t);
-  }
-}
+    function removeTypingIndicator() {
+      const indicator = document.getElementById('typingIndicator');
+      if (indicator) indicator.remove();
+    }
 
-// Focus input on load
-window.addEventListener('load', function () {
-  document.getElementById('messageInput').focus();
-});
-</script>
+    // ===== API WITH FALLBACK (handled by PHP) =====
+    async function callAPI() {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 45000);
 
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          signal: controller.signal,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            // PHP will decide how to use these:
+            primary_model: PRIMARY_MODEL,
+            fallback_model: FALLBACK_MODEL,
+            system_prompt: SYSTEM_PROMPT,
+            messages: conversationHistory
+          })
+        });
+
+        const raw = await response.text();
+
+        if (!response.ok) {
+          let msg = `API Error ${response.status}`;
+          try {
+            const j = JSON.parse(raw);
+            msg = j.error || j.message || msg;
+          } catch (e) {
+            msg = msg + ': ' + raw.slice(0, 200);
+          }
+          removeTypingIndicator();
+          addMessage('⚠️ ' + msg, 'assistant');
+          return;
+        }
+
+        let data;
+        try {
+          data = JSON.parse(raw);
+        } catch (e) {
+          removeTypingIndicator();
+          addMessage('⚠️ Invalid response from server.', 'assistant');
+          return;
+        }
+
+        const reply =
+          data?.choices?.[0]?.message?.content ??
+          data?.choices?.[0]?.text ??
+          data?.message ??
+          data?.reply ??
+          '(no content)';
+
+        removeTypingIndicator();
+        addMessage(reply, 'assistant');
+        conversationHistory.push({ role: 'assistant', content: reply });
+
+      } catch (err) {
+        removeTypingIndicator();
+        addMessage('⚠️ ' + (err.message || 'Network error.'), 'assistant');
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    }
+
+    // ===== INIT =====
+    window.addEventListener('load', () => {
+      const input = document.getElementById('messageInput');
+      input.focus();
+      input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+    });
+  </script>
 </body>
 </html>
